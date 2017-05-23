@@ -20,7 +20,7 @@ CONFIG_DIR = os.path.join(HOME_DIR, ".proton-connect")
 TMUX_SESSION_NAME = "protonvpn"
 
 config_url = "https://protonvpn.com/download/ProtonVPN_config.zip"
-vpn_config_dir = os.path.join(CONFIG_DIR, "ProtonVPN_configs")
+vpn_configs_dir = os.path.join(CONFIG_DIR, "ProtonVPN_configs")
 user_config = os.path.join(CONFIG_DIR, "protonvpn.user")
 
 
@@ -66,7 +66,7 @@ def init():
 
 
 def available(only_countries=None):
-    configs = os.listdir(vpn_config_dir)
+    configs = os.listdir(vpn_configs_dir)
     countries = set(
         conf.split(".")[0][:-3]
         for conf in configs
@@ -111,7 +111,26 @@ def connect(country=None, vpn_name=None):
     tmux = os.environ.get("TMUX", None)
     term = os.environ.get("TERM", None)
     if tmux is not None and term == "screen":
-        pass  # connect
+        raise NotImplementedError
+
+        if country is None and vpn_name is None:
+            pass  # todo: random vpn from random country
+
+        if country:
+            pass  # todo: random vpn from given country
+
+        if vpn_name:
+            # a specific vpn name overrides a set country.
+            vpn = vpn_name
+            vpn_file = os.path.join(vpn_configs_dir, f"{vpn_name}.udp1194.ovpn")
+
+        print(f"Connecting to ProtonVPN ({vpn}) now ...")
+        sh.contrib.sudo.openvpn(
+            vpn_file  # this would work, but asks for a password in the background
+            # option=vpn_file,
+            # auth_user_pass=user_config  # todo: find out why this fails
+        )
+
     else:
         print(f"You're not in a tmux session. Trying to attach to {TMUX_SESSION_NAME} ...")
         tmux_server = libtmux.Server()
