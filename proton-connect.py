@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 import argparse
 import os
-import stat
-import requests
 import re
+import requests
+import stat
 from collections import OrderedDict
 from getpass import getpass
 from pydoc import pager
+from time import sleep
 from zipfile import ZipFile
 
+import libtmux
 import sh
 
 
 HOME_DIR = os.path.expanduser("~")
 CONFIG_DIR = os.path.join(HOME_DIR, ".proton-connect")
+
+TMUX_SESSION_NAME = "protonvpn"
 
 config_url = "https://protonvpn.com/download/ProtonVPN_config.zip"
 vpn_config_dir = os.path.join(CONFIG_DIR, "ProtonVPN_configs")
@@ -104,8 +108,25 @@ def available(only_countries=None):
 
 
 def connect(country=None, vpn_name=None):
-    pass
+    tmux = os.environ.get("TMUX", None)
+    term = os.environ.get("TERM", None)
+    if tmux is not None and term == "screen":
+        pass  # connect
+    else:
+        print(f"You're not in a tmux session. Trying to attach to {TMUX_SESSION_NAME} ...")
+        tmux_server = libtmux.Server()
+        tmux_session = tmux_server.find_where({"session_name": TMUX_SESSION_NAME})
+        if not tmux_session:
+            print(f"No tmux session found. Starting new session: {TMUX_SESSION_NAME}")
+            tmux_session = tmux_server.new_session(TMUX_SESSION_NAME)
 
+        print(f"Attaching to {TMUX_SESSION_NAME} ...")
+        print("Please run this script again inside tmux to connect.")
+        sleep(1)  # give a chance to read output
+
+        tmux_session.attach_session()
+        print("done.")
+        return  # user has to run this again in tmux to actually connect.
 
 
 if __name__ == '__main__':
