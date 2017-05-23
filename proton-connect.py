@@ -61,15 +61,15 @@ def init():
     print("proton-connect is now ready to use.")
 
 
-def available(only_country=None):
+def available(only_countries=None):
     configs = os.listdir(vpn_config_dir)
     countries = set(
         conf.split(".")[0][:-3]
         for conf in configs
         if not "tor" in conf  # tor not relevant for finding countries
     )
-    if only_country:
-        countries = set(c for c in countries if c == only_country)
+    if only_countries:
+        countries = set(c for c in countries if c in only_countries)
 
     country_vpn_dict = {
         country: set(
@@ -81,8 +81,16 @@ def available(only_country=None):
     }
     country_vpn_dict = OrderedDict(sorted(country_vpn_dict.items()))
 
-    if only_country:
-        configs = [c for c in configs if any(c.startswith(vpn) for vpn in country_vpn_dict[only_country])]
+    if only_countries:
+        # filter only configs from filtered countries
+        cnfgs = []
+        for cntry in only_countries:
+            cnfgs.extend(
+                c for c
+                in configs
+                if any(c.startswith(vpn) for vpn in country_vpn_dict[cntry])
+            )
+        configs = cnfgs
 
     output_str = f"There are {len(configs)} VPNs available in {len(countries)} countries:\n"
     for country, vpns in country_vpn_dict.items():
@@ -123,10 +131,11 @@ if __name__ == '__main__':
         help = "List available VPNs, grouped by country."
     )
     list_parser.add_argument(
-        "country",
+        "countries",
+        metavar = "country",
         action = "store",
-        nargs = "?",
-        help = "The country from which to list VPNs."
+        nargs = "*",
+        help = "A country from which to list VPNs."
     )
 
     connect_parser = subparsers.add_parser(
@@ -155,7 +164,7 @@ if __name__ == '__main__':
         init()
 
     elif args.command == "list":
-        available(only_country = args.country)
+        available(only_countries = args.countries)
 
     elif args.command == "connect":
         connect(country = args.country, vpn_name = args.vpn_name)
