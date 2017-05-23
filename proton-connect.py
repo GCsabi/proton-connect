@@ -68,6 +68,9 @@ def available(only_country=None):
         for conf in configs
         if not "tor" in conf  # tor not relevant for finding countries
     )
+    if only_country:
+        countries = set(c for c in countries if c == only_country)
+
     country_vpn_dict = {
         country: set(
             f"{country}-" + re.search(r'\d\d(-tor)?\.protonvpn\.com', conf).group(0)
@@ -77,6 +80,9 @@ def available(only_country=None):
         for country in countries
     }
     country_vpn_dict = OrderedDict(sorted(country_vpn_dict.items()))
+
+    if only_country:
+        configs = [c for c in configs if any(c.startswith(vpn) for vpn in country_vpn_dict[only_country])]
 
     output_str = f"There are {len(configs)} VPNs available in {len(countries)} countries:\n"
     for country, vpns in country_vpn_dict.items():
