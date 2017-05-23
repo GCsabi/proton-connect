@@ -3,7 +3,10 @@ import argparse
 import os
 import stat
 import requests
+import re
+from collections import OrderedDict
 from getpass import getpass
+from pydoc import pager
 from zipfile import ZipFile
 
 import sh
@@ -13,8 +16,11 @@ HOME_DIR = os.path.expanduser("~")
 CONFIG_DIR = os.path.join(HOME_DIR, ".proton-connect")
 
 config_url = "https://protonvpn.com/download/ProtonVPN_config.zip"
-vpn_config_dir = os.path.join(CONFIG_DIR, "ProtonVPN_config")
+vpn_config_dir = os.path.join(CONFIG_DIR, "ProtonVPN_configs")
 user_config = os.path.join(CONFIG_DIR, "protonvpn.user")
+
+
+_VERBOSE = False
 
 
 def init():
@@ -55,11 +61,35 @@ def init():
     print("proton-connect is now ready to use.")
 
 
-def available(country=None):
-    pass
+def available(only_country=None):
+    configs = os.listdir(vpn_config_dir)
+    countries = set(
+        conf.split(".")[0][:-3]
+        for conf in configs
+        if not "tor" in conf  # tor not relevant for finding countries
+    )
+    country_vpn_dict = {
+        country: set(
+            f"{country}-" + re.search(r'\d\d(-tor)?\.protonvpn\.com', conf).group(0)
+            for conf in configs
+            if conf.startswith(country)
+        )
+        for country in countries
+    }
+    country_vpn_dict = OrderedDict(sorted(country_vpn_dict.items()))
+
+    output_str = f"There are {len(configs)} VPNs available in {len(countries)} countries:\n"
+    for country, vpns in country_vpn_dict.items():
+        output_str += f"\n{country} ({len(vpns)})"
+        if _VERBOSE:
+            output_str += f":\n"
+            for vpn in sorted(vpns):
+                output_str += f"  {vpn}\n"
+
+    pager(output_str)
 
 
-def connect(country=None):
+def connect(country=None, vpn_name=None):
     pass
 
 
@@ -67,6 +97,12 @@ def connect(country=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description = f"proton-connect. A wrapper-script for the ProtonVPN.")
+
+    parser.add_argument(
+        "-v", "--verbose",
+        action = "store_true",
+        help = "More output."
+    )
 
     # see https://docs.python.org/3/library/argparse.html#sub-commands for docs
     subparsers = parser.add_subparsers(dest = "command")
@@ -97,14 +133,23 @@ if __name__ == '__main__':
         nargs = "?",
         help = "The country in which the VPN stands. Chosen randomly, if omitted."
     )
+    connect_parser.add_argument(
+        "vpn_name",
+        metavar = "VPN",
+        action = "store",
+        nargs = "?",
+        help = "The name of the VPN to which to connect. Chosen randomly, if omitted."
+    )
 
     args = parser.parse_args()
+
+    _VERBOSE = args.verbose
 
     if args.command == "init":
         init()
 
     elif args.command == "list":
-        available(country = args.country)
+        available(only_country = args.country)
 
     elif args.command == "connect":
-        connect(country = args.country)
+        connect(country = args.country, vpn_name = args.vpn_name)
