@@ -88,6 +88,49 @@ def _print_user_data():
         print(f"You should check manually: {user_config}")
         raise LookupError("Error in configuration. Illegal number of lines.")
 
+def _get_available_vpns(only_countries=None):
+    """Helper function for listing available VPN configurations.
+
+    Lists and possibly filters ProtonVPN configuration files.
+
+    Args:
+        only_countries: A list of countries that shall be listed. Lists all, if omitted. (default: {None})
+
+    Returns:
+        A dict containing {country: configs} mappings where country is a str and configs a list.
+    """
+    configs = os.listdir(vpn_configs_dir)
+    countries = set(
+        conf.split(".")[0][:-3]
+        for conf in configs
+        if not "tor" in conf  # tor not relevant for finding countries
+    )
+    if only_countries:
+        countries = set(c for c in countries if c in only_countries)
+
+    country_vpn_dict = {
+        country: set(
+            f"{country}-" + re.search(r'\d\d(-tor)?\.protonvpn\.com', conf).group(0)
+            for conf in configs
+            if conf.startswith(country)
+        )
+        for country in countries
+    }
+    country_vpn_dict = OrderedDict(sorted(country_vpn_dict.items()))
+
+    if only_countries:
+        # filter only configs from filtered countries
+        cnfgs = []
+        for cntry in only_countries:
+            cnfgs.extend(
+                c for c
+                in configs
+                if any(c.startswith(vpn) for vpn in country_vpn_dict[cntry])
+            )
+        configs = cnfgs
+
+    return country_vpn_dict
+
 
 def init():
     os.makedirs(CONFIG_DIR, exist_ok=True)
@@ -130,38 +173,11 @@ def init():
 
 
 def available(only_countries=None):
-    configs = os.listdir(vpn_configs_dir)
-    countries = set(
-        conf.split(".")[0][:-3]
-        for conf in configs
-        if not "tor" in conf  # tor not relevant for finding countries
-    )
-    if only_countries:
-        countries = set(c for c in countries if c in only_countries)
+    country_configs = _get_available_vpns(only_countries = only_countries)
+    vpn_count = sum([len(confs) for confs in country_configs.values()])
 
-    country_vpn_dict = {
-        country: set(
-            f"{country}-" + re.search(r'\d\d(-tor)?\.protonvpn\.com', conf).group(0)
-            for conf in configs
-            if conf.startswith(country)
-        )
-        for country in countries
-    }
-    country_vpn_dict = OrderedDict(sorted(country_vpn_dict.items()))
-
-    if only_countries:
-        # filter only configs from filtered countries
-        cnfgs = []
-        for cntry in only_countries:
-            cnfgs.extend(
-                c for c
-                in configs
-                if any(c.startswith(vpn) for vpn in country_vpn_dict[cntry])
-            )
-        configs = cnfgs
-
-    output_str = f"There are {len(configs)} VPNs available in {len(countries)} countries:\n"
-    for country, vpns in country_vpn_dict.items():
+    output_str = f"There are {vpn_count} VPNs available in {len(country_configs)} countries:\n"
+    for country, vpns in country_configs.items():
         output_str += f"\n{country} ({len(vpns)})"
         if _VERBOSE:
             output_str += f":\n"
