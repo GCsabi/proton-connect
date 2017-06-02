@@ -4,6 +4,8 @@ import os
 import re
 import requests
 import stat
+import subprocess
+import sys
 from collections import OrderedDict
 from getpass import getpass
 from pydoc import pager
@@ -27,6 +29,66 @@ user_config = os.path.join(CONFIG_DIR, "protonvpn.user")
 _VERBOSE = False
 
 
+def _write_user_config(credentials=None, pass_command=None):
+    """Helper function for writing the user configuration file.
+
+    Writes either the user credentials (username, password),
+    or the command to retrieve these credentials from `pass`.
+
+    Args:
+        credentials: A tuple containing the username and password (in that order). (default: {None})
+        pass_command: The exact command used to get the credentials from `pass` (default: {None})
+
+    Raises:
+        ValueError: When neither credentials nor pass_command is given.
+    """
+    if (credentials and pass_command) or ((not credentials) and (not pass_command)):
+        raise ValueError("Exactly one of credentials or pass_command must be given!")
+
+    lines = []
+    if credentials:
+        lines = list(credentials)
+
+    elif pass_command:
+        lines = [pass_command]
+
+    if os.path.exists(user_config):
+        print(f"A user configuration already exists ({user_config}).")
+        overwrite = input("Overwrite? [yes/no] ").lower()
+        if overwrite != "yes":
+            return
+
+    with open(user_config, "w") as f:
+        f.writelines("\n".join(lines))
+
+    sh.chmod("-R", 700, CONFIG_DIR)
+    sh.chmod(600, user_config)
+    print(f"Saved to {user_config}")
+
+def _print_user_data():
+    """Helper function for printing the user credentials.
+
+    Depending on where they are saved (see _write_user_config),
+    this either prints the credentials directly from the plaintext file,
+    or runs the saved command to acquire them from `pass`.
+    """
+    lines = None
+    with open(user_config, "r") as f:
+        lines = [l.strip() for l in f.readlines()]
+
+    if len(lines) == 1:
+        print(f"Using `{lines[0]}` ...")
+        subprocess.run(lines[0].split(" "))
+
+    elif len(lines) == 2:
+        print("\n".join(lines))
+
+    else:
+        print("There seems to be something wrong with the configuration.")
+        print(f"You should check manually: {user_config}")
+        raise LookupError("Error in configuration. Illegal number of lines.")
+
+
 def init():
     os.makedirs(CONFIG_DIR, exist_ok=True)
 
@@ -41,26 +103,28 @@ def init():
     os.remove(zipfile_path)
     print("done.")
 
-    print("Do you want to save your login data for the ProtonVPN? ", end = "")
-    want_to_save_login = input("[yes/no] ").lower()
-    if want_to_save_login != "yes":
-        return
+    print("Where do you want to save your login data?")
+    choices = {
+        1: f"plaintext file ({user_config})",
+        2: "`pass`"
+    }
+    for choice, description in choices.items():
+        print(f"[{choice}]: {description}")
+    choice = int(input("Enter one of the numbers above: ").strip())
+    if choice not in choices:
+        print("Invalid choice.")
+        quit()
 
-    login = input("ProtonVPN login: ")
-    password = getpass("ProtonVPN password (leave blank to not save): ")
+    if choice == 1:
+        login = input("ProtonVPN login: ")
+        password = getpass("ProtonVPN password (leave blank to not save): ")
 
-    if os.path.exists(user_config):
-        print(f"A user configuration already exists ({user_config}).")
-        overwrite = input("Overwrite? [yes/no] ").lower()
-        if overwrite != "yes":
-            return
+        _write_user_config(credentials = (login, password))
 
-    with open(user_config, "w") as f:
-        f.write(f"{login}\n")
-        f.write(f"{password}\n")
-    sh.chmod("-R", 700, CONFIG_DIR)
-    sh.chmod(600, user_config)
-    print(f"Saved to {user_config}")
+    elif choice == 2:
+        pass_command = input("Please enter the exact command you use when getting your ProtonVPN credentials from `pass`: ")
+
+        _write_user_config(pass_command = pass_command)
 
     print("proton-connect is now ready to use.")
 
@@ -111,8 +175,6 @@ def connect(country=None, vpn_name=None):
     tmux = os.environ.get("TMUX", None)
     term = os.environ.get("TERM", None)
     if tmux is not None and term == "screen":
-        raise NotImplementedError
-
         if country is None and vpn_name is None:
             pass  # todo: random vpn from random country
 
@@ -124,17 +186,21 @@ def connect(country=None, vpn_name=None):
             vpn = vpn_name
             vpn_file = os.path.join(vpn_configs_dir, f"{vpn_name}.udp1194.ovpn")
 
+        _print_user_data()
+
         print(f"Connecting to ProtonVPN ({vpn}) now ...")
-        sh.contrib.sudo.openvpn(
-            vpn_file  # this would work, but asks for a password in the background
-            # option=vpn_file,
-            # auth_user_pass=user_config  # todo: find out why this fails
-        )
+        try:
+            subprocess.run(["sudo", "openvpn", vpn_file])
+        except KeyboardInterrupt:
+            print("done.")
 
     else:
         print(f"You're not in a tmux session. Trying to attach to {TMUX_SESSION_NAME} ...")
         tmux_server = libtmux.Server()
-        tmux_session = tmux_server.find_where({"session_name": TMUX_SESSION_NAME})
+        try:
+            tmux_session = tmux_server.find_where({"session_name": TMUX_SESSION_NAME})
+        except libtmux.exc.LibTmuxException:
+            tmux_session = None
         if not tmux_session:
             print(f"No tmux session found. Starting new session: {TMUX_SESSION_NAME}")
             tmux_session = tmux_server.new_session(TMUX_SESSION_NAME)
@@ -163,7 +229,7 @@ if __name__ == '__main__':
 
     init_parser = subparsers.add_parser(
         "init",
-        help = f"Initialize proton-connect."
+        help = f"Initialize proton-connect. This will download the openVPN configuration files and let you set up your credentials."
     )
 
     list_parser = subparsers.add_parser(
