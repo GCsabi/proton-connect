@@ -188,20 +188,25 @@ def available(only_countries=None):
     pager(output_str)
 
 
-def connect(country=None, vpn_name=None):
+def connect(countries=None, vpn_name=None):
     tmux = os.environ.get("TMUX", None)
     term = os.environ.get("TERM", None)
     if tmux is not None and term == "screen":
+        country = None
         vpn = None
-        if vpn_name is None and country is None:
-            print("Choosing a random VPN from a random county ...")
+        if vpn_name is None and not countries:
+            print("Choosing a random VPN from a random county ...", end=" ")
             country_vpn_dict = _get_available_vpns()
-            random_country = random.choice(list(country_vpn_dict))
-            vpn = random.choice(list(country_vpn_dict[random_country]))
-            print(f"Chose {vpn}")
+            country = random.choice(list(country_vpn_dict))
 
-        elif vpn_name is None and country is not None:
-            pass  # todo: random vpn from given country
+        elif vpn_name is None and countries:
+            print("Choosing a random VPN from given countries ...", end=" ")
+            country_vpn_dict = _get_available_vpns(only_countries = countries)
+            country = random.choice(list(country_vpn_dict))
+
+        if country is not None:
+            vpn = random.choice(list(country_vpn_dict[country]))
+            print(f"{vpn}")
 
         if vpn_name is not None:
             # a specific vpn name overrides everything else.
@@ -209,7 +214,7 @@ def connect(country=None, vpn_name=None):
 
         vpn_file = os.path.join(vpn_configs_dir, f"{vpn}.udp1194.ovpn")
         _print_user_data()
-        print(f"Connecting to ProtonVPN ({vpn_name}) now ...")
+        print(f"Connecting to ProtonVPN ({vpn}) now ...")
         try:
             subprocess.run(["sudo", "openvpn", vpn_file])
         except KeyboardInterrupt:
@@ -270,17 +275,18 @@ if __name__ == '__main__':
         help = "Connect to ProtonVPN."
     )
     connect_parser.add_argument(
-        "country",
-        action = "store",
-        nargs = "?",
-        help = "The country in which the VPN stands. Chosen randomly, if omitted."
-    )
-    connect_parser.add_argument(
-        "vpn_name",
+        "vpn",
         metavar = "VPN",
         action = "store",
         nargs = "?",
-        help = "The name of the VPN to which to connect. Chosen randomly, if omitted."
+        help = "The name of the VPN to which to connect. Overrides given countries. Chosen randomly, if omitted."
+    )
+    connect_parser.add_argument(
+        "--countries",
+        metavar = "country",
+        action = "store",
+        nargs = "*",
+        help = "A country in which the VPN stands. Chosen randomly, if omitted."
     )
 
     args = parser.parse_args()
@@ -294,4 +300,4 @@ if __name__ == '__main__':
         available(only_countries = args.countries)
 
     elif args.command == "connect":
-        connect(country = args.country, vpn_name = args.vpn_name)
+        connect(countries = args.countries, vpn_name = args.vpn)
