@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import os
+import random
 import re
 import requests
 import stat
@@ -191,20 +192,24 @@ def connect(country=None, vpn_name=None):
     tmux = os.environ.get("TMUX", None)
     term = os.environ.get("TERM", None)
     if tmux is not None and term == "screen":
-        if country is None and vpn_name is None:
-            pass  # todo: random vpn from random country
+        vpn = None
+        if vpn_name is None and country is None:
+            print("Choosing a random VPN from a random county ...")
+            country_vpn_dict = _get_available_vpns()
+            random_country = random.choice(list(country_vpn_dict))
+            vpn = random.choice(list(country_vpn_dict[random_country]))
+            print(f"Chose {vpn}")
 
-        if country:
+        elif vpn_name is None and country is not None:
             pass  # todo: random vpn from given country
 
-        if vpn_name:
-            # a specific vpn name overrides a set country.
+        if vpn_name is not None:
+            # a specific vpn name overrides everything else.
             vpn = vpn_name
-            vpn_file = os.path.join(vpn_configs_dir, f"{vpn_name}.udp1194.ovpn")
 
+        vpn_file = os.path.join(vpn_configs_dir, f"{vpn}.udp1194.ovpn")
         _print_user_data()
-
-        print(f"Connecting to ProtonVPN ({vpn}) now ...")
+        print(f"Connecting to ProtonVPN ({vpn_name}) now ...")
         try:
             subprocess.run(["sudo", "openvpn", vpn_file])
         except KeyboardInterrupt:
