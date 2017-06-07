@@ -37,18 +37,20 @@ def _write_user_config(credentials=None, pass_command=None):
     or the command to retrieve these credentials from `pass`.
 
     Args:
-        credentials: A tuple containing the username and password (in that order). (default: {None})
+        credentials: A tuple containing the username and password (in that order).
+            When a tuple with empty strings is passed, nothing is saved and the userfile deleted.
+            (default: {None})
         pass_command: The exact command used to get the credentials from `pass` (default: {None})
 
     Raises:
         ValueError: When neither credentials nor pass_command is given.
     """
-    if (credentials and pass_command) or ((not credentials) and (not pass_command)):
+    if (credentials is not None and pass_command is not None) or (credentials is None and pass_command is None):
         raise ValueError("Exactly one of credentials or pass_command must be given!")
 
     lines = []
     if credentials:
-        lines = list(credentials)
+        lines = [c for c in credentials if c]
 
     elif pass_command:
         lines = [pass_command]
@@ -59,12 +61,18 @@ def _write_user_config(credentials=None, pass_command=None):
         if overwrite != "yes":
             return
 
-    with open(user_config, "w") as f:
-        f.writelines("\n".join(lines))
-
     sh.chmod("-R", 700, CONFIG_DIR)
-    sh.chmod(600, user_config)
-    print(f"Saved to {user_config}")
+    if lines:
+        with open(user_config, "w") as f:
+            f.writelines("\n".join(lines))
+        sh.chmod(600, user_config)
+
+        print(f"Saved to {user_config}")
+    else:
+        try:
+            os.remove(user_config)
+        except FileNotFoundError:
+            pass
 
 def _print_user_data():
     """Helper function for printing the user credentials.
@@ -74,8 +82,12 @@ def _print_user_data():
     or runs the saved command to acquire them from `pass`.
     """
     lines = None
-    with open(user_config, "r") as f:
-        lines = [l.strip() for l in f.readlines()]
+    try:
+        with open(user_config, "r") as f:
+            lines = [l.strip() for l in f.readlines()]
+    except FileNotFoundError:
+        print("No prepared credentials found. Please enter them manually or run `proton-connect.py init` to set them up.")
+        return
 
     if len(lines) == 1:
         print(f"Using `{lines[0]}` ...")
@@ -149,6 +161,7 @@ def init():
 
     print("Where do you want to save your login data? Press Ctrl+C to quit.")
     choices = {
+        0: "Ask every time",
         1: f"plaintext file ({user_config})",
         2: "`pass`"
     }
@@ -164,7 +177,10 @@ def init():
         print("Invalid choice.")
         quit()
 
-    if choice == 1:
+    if choice == 0:
+        _write_user_config(credentials = ("",))
+
+    elif choice == 1:
         login = input("ProtonVPN login: ")
         password = getpass("ProtonVPN password (leave blank to not save): ")
 
