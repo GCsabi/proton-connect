@@ -138,7 +138,7 @@ def _get_available_vpns(only_countries=None):
             cnfgs.extend(
                 c for c
                 in configs
-                if any(c.startswith(vpn) for vpn in country_vpn_dict[cntry])
+                if any(c.startswith(vpn) for vpn in country_vpn_dict.get(cntry, []))
             )
         configs = cnfgs
 
