@@ -26,7 +26,8 @@ Some may take some additional arguments. Use `proton-connect.py MODE -h` for usa
 
 ### init
 When running the script in `init` mode, it downloads the OpenVPN configuration files for the ProtonVPNs from [protonvpn.com][config-zips] and extracts them to a subdirectory of `~/.proton-connect/`.  
-It then lets you choose whether you want to save your credentials in plaintext in a file in that same directory, or access them via [`pass`][pass].
+It then lets you choose if you want to save your credentials.
+If you want to, whether you want to save your credentials in plaintext in a file in that same directory, or access them via [`pass`][pass].
 
 ### list
 Running the script in `list` mode, does exactly that. It lists the available VPNs based on the configuration files available in the configs directory.
