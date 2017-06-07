@@ -174,7 +174,12 @@ def init():
 
 
 def available(only_countries=None):
-    country_configs = _get_available_vpns(only_countries = only_countries)
+    try:
+        country_configs = _get_available_vpns(only_countries = only_countries)
+    except FileNotFoundError:
+        print(f"Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
+        return None
+
     vpn_count = sum([len(confs) for confs in country_configs.values()])
 
     output_str = f"There are {vpn_count} VPNs available in {len(country_configs)} countries:\n"
@@ -196,12 +201,20 @@ def connect(countries=None, vpn_name=None):
         vpn = None
         if vpn_name is None and not countries:
             print("Choosing a random VPN from a random county ...", end=" ")
-            country_vpn_dict = _get_available_vpns()
+            try:
+                country_vpn_dict = _get_available_vpns()
+            except FileNotFoundError:
+                print(f"Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
+                return None
             country = random.choice(list(country_vpn_dict))
 
         elif vpn_name is None and countries:
             print("Choosing a random VPN from given countries ...", end=" ")
-            country_vpn_dict = _get_available_vpns(only_countries = countries)
+            try:
+                country_vpn_dict = _get_available_vpns(only_countries = countries)
+            except FileNotFoundError:
+                print(f"Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
+                return None
             country = random.choice(list(country_vpn_dict))
 
         if country is not None:
@@ -218,6 +231,10 @@ def connect(countries=None, vpn_name=None):
         try:
             subprocess.run(["sudo", "openvpn", vpn_file])
         except KeyboardInterrupt:
+            pass
+        except PermissionError:  # may happen when `Ctrl+C`ing
+            pass
+        finally:
             print("done.")
 
     else:
@@ -301,3 +318,4 @@ if __name__ == '__main__':
 
     elif args.command == "connect":
         connect(countries = args.countries, vpn_name = args.vpn)
+
