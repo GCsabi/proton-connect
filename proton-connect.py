@@ -147,14 +147,19 @@ def init():
     os.remove(zipfile_path)
     print("done.")
 
-    print("Where do you want to save your login data?")
+    print("Where do you want to save your login data? Press Ctrl+C to quit.")
     choices = {
         1: f"plaintext file ({user_config})",
         2: "`pass`"
     }
     for choice, description in choices.items():
         print(f"[{choice}]: {description}")
-    choice = int(input("Enter one of the numbers above: ").strip())
+    try:
+        choice = int(input("Enter one of the numbers above: ").strip())
+    except KeyboardInterrupt:
+        print("\nAborted.")
+        return None
+
     if choice not in choices:
         print("Invalid choice.")
         quit()
