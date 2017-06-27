@@ -23,9 +23,14 @@ CONFIG_DIR = os.path.join(HOME_DIR, ".proton-connect")
 TMUX_SESSION_NAME = "protonvpn"
 
 config_url = "https://protonvpn.com/download/ProtonVPN_config.zip"
-vpn_configs_dir = os.path.join(CONFIG_DIR, "ProtonVPN_configs")
+vpn_configs_dir = os.path.join(CONFIG_DIR, "configs")
 user_config = os.path.join(CONFIG_DIR, "protonvpn.user")
 
+DOWNLOAD_MESSAGE = """Download openVPN configurations:
+Please visit the downloads section in your ProtonVPN account and download the openVPN configuration files,
+if you haven't already.
+After you have downloaded them, place the configuration files in {}
+You can find the configuration files here: https://account.protonvpn.com/downloads""".format(vpn_configs_dir)
 
 _VERBOSE = False
 
@@ -114,16 +119,17 @@ def _get_available_vpns(only_countries=None):
     """
     configs = os.listdir(vpn_configs_dir)
     countries = set(
-        conf.split(".")[0][:-3]
+        "".join(c for c in conf.split(".")[0] if not c.isnumeric())  # remove numbers
         for conf in configs
         if not "tor" in conf  # tor not relevant for finding countries
     )
+    countries = set(c[:-1] if c.endswith("-") else c for c in countries)  # remove trailing dashs from country level VPNs
     if only_countries:
         countries = set(c for c in countries if c in only_countries)
 
     country_vpn_dict = {
         country: set(
-            f"{country}-" + re.search(r'\d\d(-tor)?\.protonvpn\.com', conf).group(0)
+            f"{country}" + re.search(r'(-\d\d)?(-tor)?\.protonvpn\.com', conf).group(0)
             for conf in configs
             if conf.startswith(country)
         )
@@ -148,18 +154,9 @@ def _get_available_vpns(only_countries=None):
 def init():
     os.makedirs(CONFIG_DIR, exist_ok=True)
 
-    print("Downloading ProtonVPN config files ... ", end = "")
-    r = requests.get(config_url, stream=True)
-    r.raise_for_status()
-    zipfile_path = os.path.join(CONFIG_DIR, "ProtonVPN_config.zip")
-    with open(zipfile_path, "wb") as f:
-        for chunk in r.iter_content(chunk_size=256):
-            f.write(chunk)
-    ZipFile(zipfile_path).extractall(CONFIG_DIR)
-    os.remove(zipfile_path)
-    print("done.")
+    print(DOWNLOAD_MESSAGE)
 
-    print("Where do you want to save your login data? Press Ctrl+C to quit.")
+    print("\nWhere do you want to save your login data? Press Ctrl+C to quit.")
     choices = {
         0: "Ask every time",
         1: f"plaintext file ({user_config})",

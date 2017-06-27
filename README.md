@@ -25,9 +25,8 @@ There are three modes in which this script runs.
 Some may take some additional arguments. Use `proton-connect.py MODE -h` for usage instructions for that specific mode.
 
 ### init
-When running the script in `init` mode, it downloads the OpenVPN configuration files for the ProtonVPNs from [protonvpn.com][config-zips] and extracts them to a subdirectory of `~/.proton-connect/`.  
-It then lets you choose if you want to save your credentials.
-If you want to, whether you want to save your credentials in plaintext in a file in that same directory, or access them via [`pass`][pass].
+When running the script in `init` mode, it will ask you to download the OpenVPN configuration files for the ProtonVPNs from [protonvpn.com][config-zips] and extract them to `~/.proton-connect/configs/`.  
+It then lets you choose if you want to save your credentials plaintext in a file in that same directory, or access them via [`pass`][pass], or not save them at all.
 
 ### list
 Running the script in `list` mode, does exactly that. It lists the available VPNs based on the configuration files available in the configs directory.
@@ -44,5 +43,5 @@ When you're in a tmux session, you'll have to run the script again, which then w
 Depending on your arguments, the script will choose a VPN randomly, or use the one you pass it.
 
 
-[config-zips]: https://protonvpn.com/download/ProtonVPN_config.zip
+[config-zips]: https://account.protonvpn.com/downloads
 [pass]: https://www.passwordstore.org/
