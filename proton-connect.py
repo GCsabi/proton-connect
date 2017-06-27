@@ -168,7 +168,7 @@ def init():
     for choice, description in choices.items():
         print(f"[{choice}]: {description}")
     try:
-        choice = int(input("Enter one of the numbers above: ").strip())
+        choice = int(input("Enter one of the numbers above (Ctrl+C to cancel): ").strip())
     except KeyboardInterrupt:
         print("\nAborted.")
         return None
