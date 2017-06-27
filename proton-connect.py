@@ -119,16 +119,17 @@ def _get_available_vpns(only_countries=None):
     """
     configs = os.listdir(vpn_configs_dir)
     countries = set(
-        conf.split(".")[0][:-3]
+        "".join(c for c in conf.split(".")[0] if not c.isnumeric())  # remove numbers
         for conf in configs
         if not "tor" in conf  # tor not relevant for finding countries
     )
+    countries = set(c[:-1] if c.endswith("-") else c for c in countries)  # remove trailing dashs from country level VPNs
     if only_countries:
         countries = set(c for c in countries if c in only_countries)
 
     country_vpn_dict = {
         country: set(
-            f"{country}-" + re.search(r'\d\d(-tor)?\.protonvpn\.com', conf).group(0)
+            f"{country}" + re.search(r'(-\d\d)?(-tor)?\.protonvpn\.com', conf).group(0)
             for conf in configs
             if conf.startswith(country)
         )
