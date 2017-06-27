@@ -271,8 +271,9 @@ def connect(countries=None, vpn_name=None):
         sleep(1)  # give a chance to read output
 
         tmux_session.attach_session()
-        print("done.")
-        return  # user has to run this again in tmux to actually connect.
+        ip_address = requests.get("https://api.ipify.org").text
+        print(f"done. Your ip address: {ip_address}")
+        return
 
 
 if __name__ == '__main__':
