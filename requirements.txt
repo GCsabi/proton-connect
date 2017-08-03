@@ -1,2 +1,3 @@
 sh==1.12.13
 libtmux==0.7.1
+requests==2.13.0

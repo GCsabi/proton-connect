@@ -3,7 +3,6 @@ import argparse
 import os
 import random
 import re
-import requests
 import stat
 import subprocess
 import sys
@@ -15,6 +14,7 @@ from zipfile import ZipFile
 
 import libtmux
 import sh
+import requests
 
 
 HOME_DIR = os.path.expanduser("~")
