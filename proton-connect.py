@@ -212,6 +212,21 @@ def available(only_countries=None):
 
 
 def connect(countries=None, vpn_name=None, netcmd=None):
+    """Connect to ProtonVPN
+
+    Checks if user is inside tmux;
+    if they are, prepares ProtonVPN connection and connects.
+    if they are not, connects to or starts tmux session.
+
+    Args:
+        countries: A list of country abbreviations (default: {None})
+        vpn_name: The name of a specific VPN (default: {None})
+        netcmd: The command used to start your network interfaces (default: {None})
+
+    Raises:
+        FileNotFoundError: VPN configuration file for a specified VPN doesn't exist.
+        ValueError: netcmd failed.
+    """
     tmux = os.environ.get("TMUX", None)
     term = os.environ.get("TERM", None)
     if tmux is not None and term == "screen":
@@ -222,8 +237,7 @@ def connect(countries=None, vpn_name=None, netcmd=None):
             try:
                 country_vpn_dict = _get_available_vpns()
             except FileNotFoundError:
-                print(f"Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
-                return None
+                raise FileNotFoundError(f"Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
             country = random.choice(list(country_vpn_dict))
 
         elif vpn_name is None and countries:
@@ -231,8 +245,7 @@ def connect(countries=None, vpn_name=None, netcmd=None):
             try:
                 country_vpn_dict = _get_available_vpns(only_countries = countries)
             except FileNotFoundError:
-                print(f"Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
-                return None
+                raise FileNotFoundError(f"Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
             country = random.choice(list(country_vpn_dict))
 
         if country is not None:
@@ -353,5 +366,5 @@ if __name__ == '__main__':
     elif args.command == "connect":
         try:
             connect(countries = args.countries, vpn_name = args.vpn, netcmd = args.netcmd)
-        except ValueError as ve:
-            print(ve)
+        except (FileNotFoundError, ValueError) as e:
+            print(e)
