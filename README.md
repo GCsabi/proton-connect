@@ -42,6 +42,8 @@ This way you don't have to keep the terminal open all the time or possibly Ctrl+
 When you're in a tmux session, you'll have to run the script again, which then will connect using `openvpn`.
 Depending on your arguments, the script will choose a VPN randomly, or use the one you pass it.
 
+Optionally, you may use the `--netcmd` argument to pass a command used for starting your network interfaces.
+
 
 [config-zips]: https://account.protonvpn.com/downloads
 [pass]: https://www.passwordstore.org/
