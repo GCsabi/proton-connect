@@ -259,9 +259,10 @@ def connect(countries=None, vpn_name=None, netcmd=None):
         vpn_file = os.path.join(vpn_configs_dir, f"{vpn}.udp1194.ovpn")
         _print_user_data()
 
-        print(f"Starting network interfaces: `{netcmd}`")
-        if subprocess.run(netcmd.split(" ")).returncode != 0:
-            raise ValueError(f"`{netcmd}` failed. Maybe no appropriate permissions?")
+        if netcmd is not None:
+            print(f"Starting network interfaces: `{netcmd}`")
+            if subprocess.run(netcmd.split(" ")).returncode != 0:
+                raise ValueError(f"`{netcmd}` failed. Maybe no appropriate permissions?")
 
         print(f"Connecting to ProtonVPN ({vpn}) now ...")
         try:
