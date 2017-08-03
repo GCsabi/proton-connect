@@ -211,7 +211,7 @@ def available(only_countries=None):
     pager(output_str)
 
 
-def connect(countries=None, vpn_name=None):
+def connect(countries=None, vpn_name=None, netcmd=None):
     tmux = os.environ.get("TMUX", None)
     term = os.environ.get("TERM", None)
     if tmux is not None and term == "screen":
@@ -245,15 +245,21 @@ def connect(countries=None, vpn_name=None):
 
         vpn_file = os.path.join(vpn_configs_dir, f"{vpn}.udp1194.ovpn")
         _print_user_data()
+
+        print(f"Starting network interfaces: `{netcmd}`")
+        if subprocess.run(netcmd.split(" ")).returncode != 0:
+            raise ValueError(f"`{netcmd}` failed. Maybe no appropriate permissions?")
+
         print(f"Connecting to ProtonVPN ({vpn}) now ...")
         try:
             subprocess.run(["sudo", "openvpn", vpn_file])
         except KeyboardInterrupt:
             pass
-        except PermissionError:  # may happen when `Ctrl+C`ing
+        except PermissionError:
             pass
         finally:
             print("done.")
+            return
 
     else:
         print(f"You're not in a tmux session. Trying to attach to {TMUX_SESSION_NAME} ...")
@@ -328,6 +334,11 @@ if __name__ == '__main__':
         nargs = "*",
         help = "A country in which the VPN stands. Chosen randomly, if omitted."
     )
+    connect_parser.add_argument(
+        "--netcmd",
+        action = "store",
+        help = "The command you use to enable your network interfaces."
+    )
 
     args = parser.parse_args()
 
@@ -340,5 +351,7 @@ if __name__ == '__main__':
         available(only_countries = args.countries)
 
     elif args.command == "connect":
-        connect(countries = args.countries, vpn_name = args.vpn)
-
+        try:
+            connect(countries = args.countries, vpn_name = args.vpn, netcmd = args.netcmd)
+        except ValueError as ve:
+            print(ve)
