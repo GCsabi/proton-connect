@@ -271,8 +271,12 @@ def connect(countries=None, vpn_name=None):
         sleep(1)  # give a chance to read output
 
         tmux_session.attach_session()
-        ip_address = requests.get("https://api.ipify.org").text
-        print(f"done. Your ip address: {ip_address}")
+        try:
+            ip_address = requests.get("https://api.ipify.org").text
+            print(f"done. Your ip address: {ip_address}")
+        except requests.exceptions.ConnectionError:
+            print("You are offline.")
+
         return
 
 
