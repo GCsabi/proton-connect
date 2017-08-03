@@ -35,30 +35,30 @@ You can find the configuration files here: https://account.protonvpn.com/downloa
 _VERBOSE = False
 
 
-def _write_user_config(credentials=None, pass_command=None):
+def _write_user_config(credentials=None, pass_path=None):
     """Helper function for writing the user configuration file.
 
     Writes either the user credentials (username, password),
-    or the command to retrieve these credentials from `pass`.
+    or the path to retrieve these credentials from `pass`.
 
     Args:
         credentials: A tuple containing the username and password (in that order).
             When a tuple with empty strings is passed, nothing is saved and the userfile deleted.
             (default: {None})
-        pass_command: The exact command used to get the credentials from `pass` (default: {None})
+        pass_path: The exact path used to get the credentials from `pass` (default: {None})
 
     Raises:
-        ValueError: When neither credentials nor pass_command is given.
+        ValueError: When neither credentials nor pass_path is given.
     """
-    if (credentials is not None and pass_command is not None) or (credentials is None and pass_command is None):
-        raise ValueError("Exactly one of credentials or pass_command must be given!")
+    if (credentials is not None and pass_path is not None) or (credentials is None and pass_path is None):
+        raise ValueError("Exactly one of credentials or pass_path must be given!")
 
     lines = []
     if credentials:
         lines = [c for c in credentials if c]
 
-    elif pass_command:
-        lines = [pass_command]
+    elif pass_path:
+        lines = [pass_path]
 
     if os.path.exists(user_config):
         print(f"A user configuration already exists ({user_config}).")
@@ -84,7 +84,7 @@ def _print_user_data():
 
     Depending on where they are saved (see _write_user_config),
     this either prints the credentials directly from the plaintext file,
-    or runs the saved command to acquire them from `pass`.
+    or uses `pass` to acquire them from your password store.
     """
     lines = None
     try:
@@ -96,7 +96,7 @@ def _print_user_data():
 
     if len(lines) == 1:
         print(f"Using `{lines[0]}` ...")
-        subprocess.run(lines[0].split(" "))
+        subprocess.run(["pass"] + lines[0].split(" "))
 
     elif len(lines) == 2:
         print("\n".join(lines))
@@ -184,9 +184,9 @@ def init():
         _write_user_config(credentials = (login, password))
 
     elif choice == 2:
-        pass_command = input("Please enter the exact command you use when getting your ProtonVPN credentials from `pass`: ")
+        pass_path = input("Please enter the exact path within your password store to get your ProtonVPN credentials from `pass`: ")
 
-        _write_user_config(pass_command = pass_command)
+        _write_user_config(pass_path = pass_path)
 
     print("proton-connect is now ready to use.")
 
