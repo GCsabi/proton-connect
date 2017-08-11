@@ -3,16 +3,16 @@ A small wrapper script for connecting to the ProtonVPN.
 
 ## usage
 ```
-$ ./proton-connect.py -h        
-usage: proton-connect.py [-h] [-v] {init,list,connect} ...
+$ proton-connect -h
+usage: proton-connect [-h] [-v] {init,list,connect} ...
 
 proton-connect. A wrapper-script for the ProtonVPN.
 
 positional arguments:
   {init,list,connect}
-    init               Initialize proton-connect. This will download the
-                       openVPN configuration files and let you set up your
-                       credentials.
+    init               Initialize proton-connect. This will show you where to
+                       download the openVPN configuration files and helps you
+                       set up your credentials.
     list               List available VPNs, grouped by country.
     connect            Connect to ProtonVPN.
 

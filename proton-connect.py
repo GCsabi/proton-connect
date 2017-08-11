@@ -315,7 +315,7 @@ if __name__ == '__main__':
 
     init_parser = subparsers.add_parser(
         "init",
-        help = f"Initialize proton-connect. This will download the openVPN configuration files and let you set up your credentials."
+        help = f"Initialize proton-connect. This will show you where to download the openVPN configuration files and helps you set up your credentials."
     )
 
     list_parser = subparsers.add_parser(
