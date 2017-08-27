@@ -292,10 +292,14 @@ def connect(countries=None, vpn_name=None, netcmd=None):
 
         tmux_session.attach_session()
         try:
-            ip_address = requests.get("https://api.ipify.org").text
-            print(f"done. Your ip address: {ip_address}")
+            ip_json = requests.get("https://ifconfig.co/json").json()
         except requests.exceptions.ConnectionError:
             print("You are offline.")
+        else:
+            ip_address = ip_json.get("ip")
+            city = ip_json.get("city")
+            country = ip_json.get("country")
+            print(f"done. Your ip address: {ip_address} ({city}, {country})")
 
         return
 
