@@ -37,16 +37,13 @@ _VERBOSE = False
 
 def _write_user_config(credentials=None, pass_path=None):
     """Helper function for writing the user configuration file.
-
     Writes either the user credentials (username, password),
     or the path to retrieve these credentials from `pass`.
-
     Args:
         credentials: A tuple containing the username and password (in that order).
             When a tuple with empty strings is passed, nothing is saved and the userfile deleted.
             (default: {None})
         pass_path: The exact path used to get the credentials from `pass` (default: {None})
-
     Raises:
         ValueError: When neither credentials nor pass_path is given.
     """
@@ -61,7 +58,7 @@ def _write_user_config(credentials=None, pass_path=None):
         lines = [pass_path]
 
     if os.path.exists(user_config):
-        print(f"A user configuration already exists ({user_config}).")
+        print("A user configuration already exists ({user_config}).")
         overwrite = input("Overwrite? [yes/no] ").lower()
         if overwrite != "yes":
             return
@@ -72,7 +69,7 @@ def _write_user_config(credentials=None, pass_path=None):
             f.writelines("\n".join(lines))
         sh.chmod(600, user_config)
 
-        print(f"Saved to {user_config}")
+        print("Saved to {user_config}")
     else:
         try:
             os.remove(user_config)
@@ -81,7 +78,6 @@ def _write_user_config(credentials=None, pass_path=None):
 
 def _print_user_data():
     """Helper function for printing the user credentials.
-
     Depending on where they are saved (see _write_user_config),
     this either prints the credentials directly from the plaintext file,
     or uses `pass` to acquire them from your password store.
@@ -95,7 +91,7 @@ def _print_user_data():
         return
 
     if len(lines) == 1:
-        print(f"Using `{lines[0]}` ...")
+        print("Using `{lines[0]}` ...")
         subprocess.run(["pass"] + lines[0].split(" "))
 
     elif len(lines) == 2:
@@ -103,17 +99,14 @@ def _print_user_data():
 
     else:
         print("There seems to be something wrong with the configuration.")
-        print(f"You should check manually: {user_config}")
+        print("You should check manually: {user_config}")
         raise LookupError("Error in configuration. Illegal number of lines.")
 
 def _get_available_vpns(only_countries=None):
     """Helper function for listing available VPN configurations.
-
     Lists and possibly filters ProtonVPN configuration files.
-
     Args:
         only_countries: A list of countries that shall be listed. Lists all, if omitted. (default: {None})
-
     Returns:
         A dict containing {country: configs} mappings where country is a str and configs a list.
     """
@@ -129,7 +122,7 @@ def _get_available_vpns(only_countries=None):
 
     country_vpn_dict = {
         country: set(
-            f"{country}" + re.search(r'(-\d\d)?(-tor)?\.protonvpn\.com', conf).group(0)
+            "{country}" + re.search(r'(-\d\d)?(-tor)?\.protonvpn\.com', conf).group(0)
             for conf in configs
             if conf.startswith(country)
         )
@@ -159,11 +152,11 @@ def init():
     print("\nWhere do you want to save your login data? Press Ctrl+C to quit.")
     choices = {
         0: "Ask every time",
-        1: f"plaintext file ({user_config})",
+        1: "plaintext file ({user_config})",
         2: "`pass`"
     }
     for choice, description in choices.items():
-        print(f"[{choice}]: {description}")
+        print("[{choice}]: {description}")
     try:
         choice = int(input("Enter one of the numbers above (Ctrl+C to cancel): ").strip())
     except KeyboardInterrupt:
@@ -195,34 +188,31 @@ def available(only_countries=None):
     try:
         country_configs = _get_available_vpns(only_countries = only_countries)
     except FileNotFoundError:
-        print(f"Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
+        print("Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
         return None
 
     vpn_count = sum([len(confs) for confs in country_configs.values()])
 
-    output_str = f"There are {vpn_count} VPNs available in {len(country_configs)} countries:\n"
+    output_str = "There are {vpn_count} VPNs available in {len(country_configs)} countries:\n"
     for country, vpns in country_configs.items():
-        output_str += f"\n{country} ({len(vpns)})"
+        output_str += "\n{country} ({len(vpns)})"
         if _VERBOSE:
-            output_str += f":\n"
+            output_str += ":\n"
             for vpn in sorted(vpns):
-                output_str += f"  {vpn}\n"
+                output_str += "  {vpn}\n"
 
     pager(output_str)
 
 
 def connect(countries=None, vpn_name=None, netcmd=None):
     """Connect to ProtonVPN
-
     Checks if user is inside tmux;
     if they are, prepares ProtonVPN connection and connects.
     if they are not, connects to or starts tmux session.
-
     Args:
         countries: A list of country abbreviations (default: {None})
         vpn_name: The name of a specific VPN (default: {None})
         netcmd: The command used to start your network interfaces (default: {None})
-
     Raises:
         FileNotFoundError: VPN configuration file for a specified VPN doesn't exist.
         ValueError: netcmd failed.
@@ -237,7 +227,7 @@ def connect(countries=None, vpn_name=None, netcmd=None):
             try:
                 country_vpn_dict = _get_available_vpns()
             except FileNotFoundError:
-                raise FileNotFoundError(f"Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
+                raise FileNotFoundError("Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
             country = random.choice(list(country_vpn_dict))
 
         elif vpn_name is None and countries:
@@ -245,26 +235,26 @@ def connect(countries=None, vpn_name=None, netcmd=None):
             try:
                 country_vpn_dict = _get_available_vpns(only_countries = countries)
             except FileNotFoundError:
-                raise FileNotFoundError(f"Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
+                raise FileNotFoundError("Can't find VPN configurations. Make sure {CONFIG_DIR} is set up or run `proton-connect.py init`")
             country = random.choice(list(country_vpn_dict))
 
         if country is not None:
             vpn = random.choice(list(country_vpn_dict[country]))
-            print(f"{vpn}")
+            print("{vpn}")
 
         if vpn_name is not None:
             # a specific vpn name overrides everything else.
             vpn = vpn_name
 
-        vpn_file = os.path.join(vpn_configs_dir, f"{vpn}.udp1194.ovpn")
+        vpn_file = os.path.join(vpn_configs_dir, "{vpn}.udp1194.ovpn")
 
         if netcmd is not None:
-            print(f"Starting network interfaces: `{netcmd}`")
+            print("Starting network interfaces: `{netcmd}`")
             if subprocess.run(netcmd.split(" ")).returncode != 0:
-                raise ValueError(f"`{netcmd}` failed. Maybe no appropriate permissions?")
+                raise ValueError("`{netcmd}` failed. Maybe no appropriate permissions?")
 
         _print_user_data()
-        print(f"Connecting to ProtonVPN ({vpn}) now ...")
+        print("Connecting to ProtonVPN ({vpn}) now ...")
         try:
             subprocess.run(["sudo", "openvpn", vpn_file])
         except KeyboardInterrupt:
@@ -276,17 +266,17 @@ def connect(countries=None, vpn_name=None, netcmd=None):
             return
 
     else:
-        print(f"You're not in a tmux session. Trying to attach to {TMUX_SESSION_NAME} ...")
+        print("You're not in a tmux session. Trying to attach to {TMUX_SESSION_NAME} ...")
         tmux_server = libtmux.Server()
         try:
             tmux_session = tmux_server.find_where({"session_name": TMUX_SESSION_NAME})
         except libtmux.exc.LibTmuxException:
             tmux_session = None
         if not tmux_session:
-            print(f"No tmux session found. Starting new session: {TMUX_SESSION_NAME}")
+            print("No tmux session found. Starting new session: {TMUX_SESSION_NAME}")
             tmux_session = tmux_server.new_session(TMUX_SESSION_NAME)
 
-        print(f"Attaching to {TMUX_SESSION_NAME} ...")
+        print("Attaching to {TMUX_SESSION_NAME} ...")
         print("Please run this script again inside tmux to connect.")
         sleep(1)  # give a chance to read output
 
@@ -299,14 +289,14 @@ def connect(countries=None, vpn_name=None, netcmd=None):
             ip_address = ip_json.get("ip")
             city = ip_json.get("city")
             country = ip_json.get("country")
-            print(f"done. Your ip address: {ip_address} ({city}, {country})")
+            print("done. Your ip address: {ip_address} ({city}, {country})")
 
         return
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description = f"proton-connect. A wrapper-script for the ProtonVPN.")
+        description = "proton-connect. A wrapper-script for the ProtonVPN.")
 
     parser.add_argument(
         "-v", "--verbose",
@@ -319,7 +309,7 @@ if __name__ == '__main__':
 
     init_parser = subparsers.add_parser(
         "init",
-        help = f"Initialize proton-connect. This will show you where to download the openVPN configuration files and helps you set up your credentials."
+        help = "Initialize proton-connect. This will show you where to download the openVPN configuration files and helps you set up your credentials."
     )
 
     list_parser = subparsers.add_parser(
@@ -372,4 +362,4 @@ if __name__ == '__main__':
         try:
             connect(countries = args.countries, vpn_name = args.vpn, netcmd = args.netcmd)
         except (FileNotFoundError, ValueError) as e:
-            print(e)
+print(e)
